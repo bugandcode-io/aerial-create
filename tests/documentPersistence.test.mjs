@@ -12,7 +12,7 @@ function memoryStorage() {
   const storage = createLocalDocumentStorage(() => ({
     getItem: (key) => data.get(key) ?? null,
     setItem: (key, value) => { data.set(key, value); writes++; },
-    removeItem: (key) => data.delete(key),
+    removeItem: (key) => data.delete(key), get length() { return data.size; }, key: (index) => [...data.keys()][index] ?? null,
   }));
   return { data, storage, writes: () => writes };
 }
@@ -133,4 +133,61 @@ test('failed storage writes leave changes unsaved and block New/Import from clea
   assert.throws(()=>session.newDocument()); assert.deepEqual(get().getDocument(),document);
   assert.throws(()=>session.importDocument(serializeDocument(createDocument()))); assert.deepEqual(get().getDocument(),document);
   session.dispose();
+});
+
+test('listing discovers legacy records, sorts saved dates and isolates malformed records', () => {
+  const { storage, data } = memoryStorage();
+  const older = { ...createDocument(), name: 'Older', updatedAt: '2025-01-01T00:00:00.000Z' };
+  const newer = { ...createDocument(), name: 'Newer', updatedAt: '2026-01-01T00:00:00.000Z' };
+  storage.saveDocument(older); storage.saveDocument(newer);
+  data.set(documentKey('broken'), '{bad');
+  data.set(documentKey('unsupported'), JSON.stringify({ version: 99 }));
+  data.set(documentKey('mismatch'), serializeDocument(older));
+  data.set('unrelated', 'leave alone');
+  const result = storage.listDocuments();
+  assert.deepEqual(result.documents.map(d => d.id), [newer.id, older.id]);
+  assert.equal(result.invalidCount, 3);
+  assert.deepEqual(storage.loadDocument(older.id), older);
+  assert.equal(storage.loadDocument().id, newer.id);
+  assert.throws(() => storage.loadDocument('broken'));
+  assert.throws(() => storage.loadDocument('missing'));
+});
+
+test('opening saves pending changes, preserves target timestamps and resets transient state on recovery', () => {
+  const { storage } = memoryStorage();
+  const target = populated(); storage.saveDocument(target);
+  const session = createDocumentPersistence(store, storage);
+  session.newDocument();
+  get().addText('body'); get().copySelected(); get().beginInteraction();
+  get().updateText(get().selectedId, { text: 'Pending edit' });
+  const previousId = get().document.id;
+  session.openDocument(target.id);
+  assert.deepEqual(get().getDocument(), target);
+  assert.equal(storage.loadDocument(previousId).elements[0].text, 'Pending edit');
+  assert.equal(get().selectedId, null); assert.equal(get().clipboard, null);
+  assert.deepEqual(get().past, []); assert.deepEqual(get().future, []);
+  assert.equal(get().interactionStart, null);
+  session.dispose(); get().loadDocument(createDocument());
+  const recovered = createDocumentPersistence(store, storage);
+  assert.deepEqual(get().getDocument(), target); recovered.dispose();
+});
+
+test('invalid targets and failed save or activation keep the current design open', () => {
+  const { storage, data } = memoryStorage();
+  const target = createDocument(); storage.saveDocument(target);
+  const session = createDocumentPersistence(store, storage);
+  session.newDocument(); get().addShape('arrow');
+  const current = get().getDocument();
+  data.set(documentKey('broken'), '{bad');
+  assert.throws(() => session.openDocument('broken'));
+  assert.deepEqual(get().getDocument(), current); session.dispose();
+  const failing = createDocumentPersistence(store, { ...storage, loadDocument: id => id ? storage.loadDocument(id) : null,
+    saveDocument: () => { throw new Error('Quota exceeded'); } });
+  assert.throws(() => failing.openDocument(target.id), /could not be saved/);
+  assert.deepEqual(get().getDocument(), current); failing.dispose();
+  const activationFailure = createDocumentPersistence(store, { ...storage, loadDocument: id => id ? storage.loadDocument(id) : null,
+    activateDocument: () => { throw new Error('Storage unavailable'); } });
+  assert.throws(() => activationFailure.openDocument(target.id));
+  assert.equal(get().document.id, current.id);
+  assert.equal(storage.loadDocument().id, current.id); activationFailure.dispose();
 });

@@ -1,0 +1,10 @@
+import { createApp } from './app';
+import { configFromEnv, databasePool } from './config';
+import { mysqlRepository } from './mysqlRepository';
+const config = configFromEnv();
+const pool = databasePool();
+await pool.query('SELECT 1');
+const app = createApp(mysqlRepository(pool), config);
+const server = app.listen(config.port, '127.0.0.1', () => console.log(`Aerial API: http://127.0.0.1:${config.port}`));
+const stop = () => server.close(() => { void pool.end(); });
+process.on('SIGINT', stop); process.on('SIGTERM', stop);

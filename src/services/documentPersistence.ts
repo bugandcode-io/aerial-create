@@ -58,6 +58,18 @@ export function createDocumentPersistence(store: StoreApi<EditorState>, storage:
   schedule();
   return {
     flush,
+    listDocuments: () => storage.listDocuments(),
+    openDocument(id: string) {
+      if (id === store.getState().document.id) return;
+      const document = storage.loadDocument(id);
+      if (!document) throw new Error('This saved design is no longer available.');
+      store.getState().commitInteraction();
+      if (!flush()) throw new Error('The current design could not be saved. Export JSON before opening another design.');
+      // Move the recovery pointer before replacing the editor; failure keeps current work open.
+      storage.activateDocument(document.id);
+      store.getState().loadDocument(document);
+      savedFingerprint = fingerprint(); clearTimeout(timer); status('Saved');
+    },
     newDocument() {
       store.getState().commitInteraction();
       if (!flush()) throw new Error('The current design could not be saved. Export JSON before starting a new design.');

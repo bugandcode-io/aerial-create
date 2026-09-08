@@ -4,9 +4,10 @@ import type { SaveStatus } from '../../services/documentPersistence';
 import { Icon } from './Icon';
 interface TopBarProps {
   onDownload: () => void; saveStatus: SaveStatus; onNew: () => void;
-  onExport: () => void; onImport: (file: File) => void;
+  onExport: () => void; onImport: (file: File) => void; onOpen: () => void;
+  onSave: () => void; onLogout: () => void; cloudStatus: string; email: string;
 }
-export function TopBar({ onDownload, saveStatus, onNew, onExport, onImport }: TopBarProps) {
+export function TopBar({ onDownload, saveStatus, onNew, onExport, onImport, onOpen, onSave, onLogout, cloudStatus, email }: TopBarProps) {
   const { past, future, undo, redo, document, renameDocument } = useEditorStore();
   const [nameDraft, setNameDraft] = useState<string | null>(null);
   const menuRef = useRef<HTMLDetailsElement>(null);
@@ -22,13 +23,16 @@ export function TopBar({ onDownload, saveStatus, onNew, onExport, onImport }: To
         onKeyDown={(event) => { if (event.key === 'Enter' || event.key === 'Escape') event.currentTarget.blur(); }} />
       <span className="project-tag">{document.width} × {document.height}</span>
     </div>
-    <span className="save-status" role="status" title={saveStatus === 'Unsaved changes' ? 'Changes are pending. If this persists, export JSON to protect your work.' : 'Saved locally in this browser'}>{saveStatus}</span>
+    <span className="save-status" role="status" title={`Local recovery: ${saveStatus}. ${cloudStatus}`}>{saveStatus === 'Saved' ? 'Local saved' : saveStatus} · {cloudStatus}</span>
     <details className="document-menu" ref={menuRef}>
       <summary aria-label="Document menu" title="Document menu">⋯</summary>
       <div className="document-menu-items">
         <button onClick={() => { closeMenu(); onNew(); }}>New design</button>
+        <button onClick={() => { closeMenu(); onOpen(); }}>Open saved design</button>
+        <button onClick={() => { closeMenu(); onSave(); }}>Save to account</button>
         <button onClick={() => { closeMenu(); onExport(); }}>Export JSON</button>
         <button onClick={() => { closeMenu(); fileRef.current?.click(); }}>Import JSON</button>
+        <button title={email} onClick={() => { closeMenu(); onLogout(); }}>Log out</button>
       </div>
     </details>
     <input ref={fileRef} type="file" accept=".json,application/json" hidden aria-label="Import document JSON"
