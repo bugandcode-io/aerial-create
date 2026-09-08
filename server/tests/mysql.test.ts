@@ -4,12 +4,14 @@ import { randomUUID } from 'node:crypto';
 import { databasePool } from '../config';
 import { mysqlRepository } from '../mysqlRepository';
 import { createDocument } from '../../src/services/documentFormat';
+import argon2 from 'argon2';
 
 test('MySQL integration: ownership, JSON round-trip, duplicate email, sessions, update and delete',
   {skip:process.env.MYSQL_INTEGRATION !== '1'},async()=>{
   const pool=databasePool();const repository=mysqlRepository(pool);
-  const user={id:randomUUID(),email:`integration-${randomUUID()}@example.com`,password_hash:'test-only'};
-  const other={id:randomUUID(),email:`integration-${randomUUID()}@example.com`,password_hash:'test-only'};
+  const password_hash=await argon2.hash(randomUUID(),{type:argon2.argon2id});
+  const user={id:randomUUID(),email:`integration-${randomUUID()}@example.com`,password_hash};
+  const other={id:randomUUID(),email:`integration-${randomUUID()}@example.com`,password_hash};
   try {
     assert.equal(await repository.createUser(user),true);assert.equal(await repository.createUser(other),true);
     assert.equal(await repository.createUser({...user,id:randomUUID()}),false);

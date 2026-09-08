@@ -152,3 +152,34 @@ Milestones 1–3 delivered the editor, text, shapes, and layers. Milestones 4–
 No email verification, password reset, multi-factor authentication, multi-device conflict resolution, or distributed rate limiting yet. Concurrent saves to the same project use last-write-wins; an older tab can recreate a deleted project if explicitly saved. Storage and quota failures retain local drafts and report errors; there is no automatic cloud retry queue. Legacy anonymous documents require an exported JSON file to migrate through the UI. There are no uploads, templates, video, collaboration, or AI features.
 
 Recommended Milestone 7: account recovery and reliability—verified email, password reset, and conflict-aware cloud saves. Do not start it automatically.
+
+## DigitalOcean MySQL verification
+
+Use the cluster hostname and port from DigitalOcean Connection Details (typically 25060), with MYSQL_DATABASE=aerial_create and MYSQL_USER=aerial_app. Keep the actual password in the ignored .env file. A valid SESSION_SECRET must contain at least 32 characters.
+
+Remote MySQL hosts now always use TLS with certificate-chain and hostname verification. If the cluster uses its own CA, download its CA certificate from DigitalOcean and set:
+
+```dotenv
+MYSQL_SSL_CA_FILE=C:/path/to/ca-certificate.crt
+```
+
+The path is read by the backend only. Do not disable certificate verification. Loopback MySQL remains compatible without TLS; MYSQL_SSL=true enables verified TLS for loopback too. See [DigitalOcean connection instructions](https://docs.digitalocean.com/products/databases/mysql/how-to/connect/).
+
+With .env configured and the certificate present, run:
+
+```powershell
+npm run db:migrate
+$env:MYSQL_INTEGRATION='1'
+node --env-file=.env --import tsx --test server/tests/mysql.test.ts server/tests/mysqlHttp.test.ts
+Remove-Item Env:MYSQL_INTEGRATION
+```
+
+The HTTP integration suite starts disposable local API child processes against the actual database, registers two uniquely named test accounts, verifies their stored Argon2id hashes, exercises project CRUD and ownership rejection in both directions, restarts the API process, and verifies the same session cookies and documents still work. It also verifies logout revocation. It removes only its own uniquely named fixtures. No production API process or infrastructure is restarted.
+
+Real-database tests remain opt-in; a skipped test is not evidence that database integration passed. The default local regression suite independently covers account-scoped recovery isolation.
+
+### Real-database verification completed (2026-09-08)
+
+The schema initialization completed against DigitalOcean MySQL on port 25060 with CA-chain and hostname verification enabled. The users, projects, and sessions tables are initialized with foreign keys. The migration account requires REFERENCES as well as the other documented privileges.
+
+Both opt-in real-MySQL tests passed, including real HTTP registration, stored Argon2id verification, login/logout, two-user ownership rejection, project creation/update/rename/retrieval/deletion, and persistence of sessions and documents across an actual API child-process restart. Temporary test fixtures were cleaned up. The 32 default regression tests also passed, including account-scoped local recovery isolation. TypeScript, Oxlint, and production build passed; the existing Vite bundle-size advisory remains. No deployment configuration was changed.
