@@ -13,6 +13,11 @@ export interface AppConfig { secret: string; origin: string; production: boolean
 export function createApp(repository: Repository, config: AppConfig) {
   const app = express();
   app.disable('x-powered-by');
+  const allowedOrigins = new Set([
+    config.origin,
+    config.origin.replace('127.0.0.1', 'localhost'),
+    config.origin.replace('localhost', '127.0.0.1'),
+  ]);
   const cookieName = config.production ? '__Host-aerial-session' : 'aerial-session';
   const cookieOptions = { httpOnly:true, secure:config.production, sameSite:'lax' as const, path:'/' };
   const hash = (token: string) => createHmac('sha256', config.secret).update(token).digest('hex');
@@ -21,16 +26,17 @@ export function createApp(repository: Repository, config: AppConfig) {
   app.use((req,res,next) => {
     res.setHeader('Cache-Control','no-store'); res.setHeader('X-Content-Type-Options','nosniff');
     const origin = req.headers.origin;
-    if (origin && origin !== config.origin) { res.status(403).json({error:'Request origin is not allowed.'}); return; }
-    if (origin === config.origin) {
-      res.setHeader('Access-Control-Allow-Origin',config.origin); res.setHeader('Vary','Origin');
+    const isAllowedOrigin = origin ? allowedOrigins.has(origin) : false;
+    if (origin && !isAllowedOrigin) { res.status(403).json({error:'Request origin is not allowed.'}); return; }
+    if (origin && isAllowedOrigin) {
+      res.setHeader('Access-Control-Allow-Origin', origin); res.setHeader('Vary','Origin');
       res.setHeader('Access-Control-Allow-Credentials','true');
       res.setHeader('Access-Control-Allow-Headers','Content-Type, X-Aerial-Request, X-Aerial-User');
       res.setHeader('Access-Control-Allow-Methods','GET, POST, PUT, DELETE, OPTIONS');
     }
     if (req.method === 'OPTIONS') { res.sendStatus(204); return; }
     // Origin plus a custom header protects cookie-authenticated mutations from CSRF.
-    if (!['GET','HEAD'].includes(req.method) && (origin !== config.origin || req.headers['x-aerial-request'] !== '1')) {
+    if (!['GET','HEAD'].includes(req.method) && (!isAllowedOrigin || req.headers['x-aerial-request'] !== '1')) {
       res.status(403).json({error:'Request verification failed.'}); return;
     }
     next();
