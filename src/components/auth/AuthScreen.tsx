@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { authApi, type CurrentUser } from '../../services/auth';
 import '../editor/editor.css';
-export function AuthScreen({onAuthenticated, initialError = ''}: {onAuthenticated:(user:CurrentUser)=>void; initialError?:string}) {
-  const [register,setRegister] = useState(false);
+export function AuthScreen({onAuthenticated, initialError = '', register = false, onModeChange}: {onAuthenticated:(user:CurrentUser)=>void; initialError?:string; register?:boolean; onModeChange:()=>void}) {
   const [email,setEmail] = useState(''); const [password,setPassword] = useState('');
   const [error,setError] = useState(initialError); const [busy,setBusy] = useState(false);
 
@@ -47,7 +46,7 @@ export function AuthScreen({onAuthenticated, initialError = ''}: {onAuthenticate
 
         <button className="download-button" disabled={busy}>{busy ? 'Please wait…' : register ? 'Create account' : 'Log in'}</button>
 
-        <button type="button" className="auth-switch" disabled={busy} onClick={()=>{setRegister(!register);setError('');}}>
+        <button type="button" className="auth-switch" disabled={busy} onClick={onModeChange}>
           {register ? 'Already have an account? Log in' : 'Need an account? Create one'}
         </button>
       </form>

@@ -1,0 +1,34 @@
+import { LandingBrand } from './LandingPage';
+
+const privacy = [
+  ['Who we are', 'Aerial Create is operated by Bug and Code LLC. This policy describes the information used to provide the Aerial Create website and browser-based design editor. Contact support@bugandcode.io with privacy questions or requests.'],
+  ['Information used by the service', 'When you register, we collect your email address and process your password to create a secure password hash. The application stores the hash, not your plaintext password. We store account identifiers, project names, design documents, and creation and update times. Technical connection information, such as IP addresses and request metadata, is also processed to deliver requests and help protect the service.'],
+  ['How information is used', 'We use account information to authenticate you, maintain your session, and restrict projects to their owner. We use design documents to save, retrieve, and export your work. Information you send to support is used to respond to your request.'],
+  ['Cookies and browser recovery', 'An HTTP-only session cookie keeps you signed in. Sessions currently expire after seven days unless ended earlier. The editor also saves recovery drafts in browser storage, separated by account. Logging out does not erase those drafts. Clearing browser storage removes local drafts and cookies but does not delete projects already saved to your account. Use care on shared devices.'],
+  ['Service providers and disclosures', 'Our infrastructure providers process information to host and operate the service; account project data is stored in a MySQL database hosted by DigitalOcean. Information may also be disclosed when required by law or necessary to investigate misuse and protect the service or its users. The current application does not include advertising trackers or a sale-of-data feature.'],
+  ['Retention and your choices', 'Account and project information is retained to provide your account and saved designs. You can delete individual account projects in the editor and export designs as JSON or PNG. Deleted account projects may still have local recovery copies, and infrastructure backups may retain earlier records. For account deletion, correction, access, or other privacy requests, contact us. We may need to verify your identity before acting. Your legal rights depend on your location; this policy does not limit rights provided by applicable law.'],
+  ['Security', 'The service uses password hashing, session controls, and project ownership checks. No online service or storage method can guarantee absolute security. Protect your login credentials and keep independent copies of important work.'],
+  ['Children', 'Aerial Create is not directed to children under 13. If you believe a child has provided personal information, contact us so we can investigate and address it.'],
+  ['Updates', 'We may update this policy as the service changes. The revision date below identifies the current version. Material changes will be communicated as required by applicable law.'],
+];
+const terms = [
+  ['The service', 'These terms describe your use of Aerial Create, a visual design application operated by Bug and Code LLC. Use the service only if you can enter into a binding agreement under applicable law, or have the authorization required by that law. If you use it for an organization, you must have authority to act for that organization.'],
+  ['Your account', 'Provide accurate account information and protect your password. You are responsible for activity you authorize through your account. Contact support@bugandcode.io if you suspect unauthorized access. Do not access another person’s account or projects without permission.'],
+  ['Your designs', 'You retain your rights in the content you create or provide. You give Bug and Code LLC the limited permission needed to store, process, display to you, and export that content to operate the service. This does not transfer ownership of your designs to us. You are responsible for having the rights needed to use your content and for reviewing your exports before using or distributing them.'],
+  ['Acceptable use', 'Do not use Aerial Create for unlawful activity, to infringe another person’s rights, or to distribute malicious code. Do not bypass authentication, test accounts you do not own without authorization, disrupt the service, or attempt to obtain another user’s information.'],
+  ['Saving and availability', 'Local autosave is a recovery feature, not a substitute for saving to your account or keeping backups. Cloud saves are explicit; unsaved changes may exist only in your current browser. Simultaneous edits can overwrite one another. Export important designs independently. Features may change, and we do not promise uninterrupted availability or that every error can be recovered.'],
+  ['Our software and branding', 'Bug and Code LLC and its licensors retain their rights in the application, its software, and branding. These terms permit use of the service; they do not grant ownership of the application or rights to present its branding as your own. This does not affect your ownership of your designs.'],
+  ['Privacy and account closure', 'Our Privacy Policy explains how the service handles account information and designs. You may stop using the service at any time and request account deletion through support. We may restrict access where necessary to address misuse, legal obligations, or security risks. Export work you want to keep before requesting deletion.'],
+  ['Service limitations', 'To the extent allowed by applicable law, the service is provided as available without a guarantee that it will meet every particular requirement. Nothing in these terms excludes rights, remedies, warranties, or liability that cannot lawfully be excluded.'],
+  ['Changes and questions', 'We may update these terms as the service evolves. Material changes will be communicated as required by applicable law. Questions about these terms can be sent to support@bugandcode.io.'],
+];
+
+export function LegalPage({kind}: {kind:'privacy'|'terms'}) {
+  return <div className="landing landing-information"><header className="landing-header"><LandingBrand /><a href="/">Back to home ↗</a></header><main>
+    <p className="landing-eyebrow">BUG AND CODE LLC</p><h1>{kind==='privacy'?'Privacy Policy':'Terms of Service'}</h1>
+    <p>Last updated: September 8, 2026</p>
+    {(kind==='privacy'?privacy:terms).map(([heading,copy])=><section key={heading}><h2>{heading}</h2><p>{copy}</p></section>)}
+    <p>Contact: <a className="landing-text-link" href="mailto:support@bugandcode.io">support@bugandcode.io</a></p>
+    <a className="landing-button secondary" href={kind==='privacy'?'/terms':'/privacy'}>{kind==='privacy'?'Terms of Service':'Privacy Policy'}</a>
+  </main></div>;
+}
