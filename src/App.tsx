@@ -29,7 +29,7 @@ export default function App() {
   if(route==='/') return <LandingPage authenticated={Boolean(user)} />;
   if(route==='/privacy'||route==='/terms') return <LegalPage kind={route==='/privacy'?'privacy':'terms'} />;
   if(route==='/not-found') return <InformationPage kind="not-found" />;
-  if(loading) return <main className="auth-screen auth-loading"><div className="auth-card auth-loading-card" role="status" aria-live="polite">
+  if(loading && route === '/editor') return <main className="auth-screen auth-loading"><div className="auth-card auth-loading-card" role="status" aria-live="polite">
     <div className="brand"><span className="brand-mark">A</span><span>AERIAL <b>CREATE</b></span></div>
     <div className="loading-spinner" aria-hidden="true" />
     <h1>Restoring your session</h1>
